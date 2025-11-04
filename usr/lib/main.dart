@@ -1,62 +1,87 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const WallpaperApp());
+  runApp(const GameApp());
 }
 
-class WallpaperApp extends StatelessWidget {
-  const WallpaperApp({super.key});
+class GameApp extends StatelessWidget {
+  const GameApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Wallpaper Creator',
+      title: 'Tic-Tac-Toe Game',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
-      home: const WallpaperHomePage(),
+      home: const TicTacToePage(),
     );
   }
 }
 
-class WallpaperHomePage extends StatefulWidget {
-  const WallpaperHomePage({super.key});
+class TicTacToePage extends StatefulWidget {
+  const TicTacToePage({super.key});
 
   @override
-  State<WallpaperHomePage> createState() => _WallpaperHomePageState();
+  State<TicTacToePage> createState() => _TicTacToePageState();
 }
 
-class _WallpaperHomePageState extends State<WallpaperHomePage> {
-  Color _startColor = Colors.blue;
-  Color _endColor = Colors.purple;
+class _TicTacToePageState extends State<TicTacToePage> {
+  List<String> board = List.filled(9, '');
+  String currentPlayer = 'X';
+  String winner = '';
+  bool isDraw = false;
 
-  void _changeStartColor(Color color) {
-    setState(() {
-      _startColor = color;
-    });
+  void _makeMove(int index) {
+    if (board[index] == '' && winner == '' && !isDraw) {
+      setState(() {
+        board[index] = currentPlayer;
+        _checkWinner();
+        if (winner == '' && !isDraw) {
+          currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
+        }
+      });
+    }
   }
 
-  void _changeEndColor(Color color) {
-    setState(() {
-      _endColor = color;
-    });
+  void _checkWinner() {
+    // Check rows
+    for (int i = 0; i < 3; i++) {
+      if (board[i * 3] == board[i * 3 + 1] && board[i * 3 + 1] == board[i * 3 + 2] && board[i * 3] != '') {
+        winner = board[i * 3];
+        return;
+      }
+    }
+    // Check columns
+    for (int i = 0; i < 3; i++) {
+      if (board[i] == board[i + 3] && board[i + 3] == board[i + 6] && board[i] != '') {
+        winner = board[i];
+        return;
+      }
+    }
+    // Check diagonals
+    if (board[0] == board[4] && board[4] == board[8] && board[0] != '') {
+      winner = board[0];
+      return;
+    }
+    if (board[2] == board[4] && board[4] == board[6] && board[2] != '') {
+      winner = board[2];
+      return;
+    }
+    // Check for draw
+    if (!board.contains('')) {
+      isDraw = true;
+    }
   }
 
-  void _randomizeColors() {
+  void _resetGame() {
     setState(() {
-      _startColor = Color.fromRGBO(
-        (0 + (255 - 0) * (DateTime.now().millisecondsSinceEpoch % 1000) / 1000).toInt(),
-        (0 + (255 - 0) * (DateTime.now().millisecondsSinceEpoch % 1000) / 1000).toInt(),
-        (0 + (255 - 0) * (DateTime.now().millisecondsSinceEpoch % 1000) / 1000).toInt(),
-        1,
-      );
-      _endColor = Color.fromRGBO(
-        (0 + (255 - 0) * ((DateTime.now().millisecondsSinceEpoch + 500) % 1000) / 1000).toInt(),
-        (0 + (255 - 0) * ((DateTime.now().millisecondsSinceEpoch + 500) % 1000) / 1000).toInt(),
-        (0 + (255 - 0) * ((DateTime.now().millisecondsSinceEpoch + 500) % 1000) / 1000).toInt(),
-        1,
-      );
+      board = List.filled(9, '');
+      currentPlayer = 'X';
+      winner = '';
+      isDraw = false;
     });
   }
 
@@ -64,135 +89,53 @@ class _WallpaperHomePageState extends State<WallpaperHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wallpaper Creator'),
+        title: const Text('Tic-Tac-Toe'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [_startColor, _endColor],
-                ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              winner != '' ? 'Winner: $winner' : isDraw ? 'It\'s a Draw!' : 'Current Player: $currentPlayer',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
               ),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => _showColorPicker(context, _startColor, _changeStartColor),
-                        child: const Text('Start Color'),
+              itemCount: 9,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () => _makeMove(index),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: board[index] == 'X' ? Colors.green : board[index] == 'O' ? Colors.red : Colors.blue[100],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: Text(
+                        board[index],
+                        style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                      ElevatedButton(
-                        onPressed: () => _showColorPicker(context, _endColor, _changeEndColor),
-                        child: const Text('End Color'),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _randomizeColors,
-                    child: const Text('Randomize'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showColorPicker(BuildContext context, Color initialColor, Function(Color) onColorChanged) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pick a color'),
-          content: SingleChildScrollView(
-            child: ColorPicker(
-              pickerColor: initialColor,
-              onColorChanged: onColorChanged,
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Done'),
-              onPressed: () {
-                Navigator.of(context).pop();
+                );
               },
             ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class ColorPicker extends StatefulWidget {
-  final Color pickerColor;
-  final ValueChanged<Color> onColorChanged;
-
-  const ColorPicker({
-    super.key,
-    required this.pickerColor,
-    required this.onColorChanged,
-  });
-
-  @override
-  State<ColorPicker> createState() => _ColorPickerState();
-}
-
-class _ColorPickerState extends State<ColorPicker> {
-  late Color currentColor;
-
-  @override
-  void initState() {
-    super.initState();
-    currentColor = widget.pickerColor;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text('Selected Color: ${currentColor.toString()}'),
-        const SizedBox(height: 20),
-        Wrap(
-          children: [
-            for (var color in [Colors.red, Colors.green, Colors.blue, Colors.yellow, Colors.purple, Colors.orange])
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    currentColor = color;
-                  });
-                  widget.onColorChanged(color);
-                },
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  margin: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _resetGame,
+              child: const Text('New Game'),
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
